@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mapa de competências - Liderança Penske Inbound</title>
+
+  <!-- Fonte (clean) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Chart.js + DataLabels -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+
+  <style>
+    :root{
+      --bg: #f6f7fb;
+      --card: #ffffff;
+      --text: #111827;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+
+      /* Pastéis */
+      --auto: #a7d7b8;   /* verde pastel */
+      --gestao: #a8c8ff; /* azul pastel */
+
+      /* KPI status (borda superior apenas) */
+      --high: #16a34a;  /* verde */
+      --good: #facc15;  /* amarelo */
+      --need: #ef4444;  /* vermelho */
+      --neutral: #94a3b8; /* cinza (KPIs textuais) */
+    }
+
+    * { box-sizing: border-box; }
+    body{
+      margin:0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .container{
+      max-width: 1120px;
+      margin: 28px auto;
+      padding: 0 18px;
+    }
+
+    header{
+      display:flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .title-row{
+      display:flex;
+      align-items:flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    h1{
+      font-size: 22px;
+      margin:0;
+      letter-spacing: -0.2px;
+    }
+
+    .subtitle{
+      margin: 2px 0 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .controls{
+      display:flex;
+      gap: 10px;
+      align-items:center;
+      margin-top: 4px;
+      flex-wrap: wrap;
+    }
+
+    label{
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    select{
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 14px;
+      outline: none;
+      min-width: 260px;
+      box-shadow: 0 1px 0 rgba(0,0,0,0.02);
+      font-family: inherit;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    @media(min-width: 900px){
+      .grid{
+        grid-template-columns: 1fr 1fr;
+      }
+      .chart-card{ grid-column: 1 / -1; }
+      .data-card{ grid-column: 1 / -1; }
+    }
+
+    .card{
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px 16px;
+      box-shadow: 0 2px 10px rgba(17,24,39,0.04);
+    }
+
+    .kpi{
+      position: relative;
+      overflow: hidden;
+      padding-top: 16px;
+    }
+
+    .kpi::before{
+      content:"";
+      position:absolute;
+      top:0;
+      left:0;
+      right:0;
+      height: 5px;
+      background: var(--border);
+    }
+
+    .kpi.high::before{ background: var(--high); }
+    .kpi.good::before{ background: var(--good); }
+    .kpi.need::before{ background: var(--need); }
+    .kpi.neutral::before{ background: var(--neutral); }
+
+    .kpi-title{
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 0 0 6px 0;
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .kpi-value{
+      font-size: 34px;
+      font-weight: 800;
+      letter-spacing: -0.6px;
+      margin: 0;
+    }
+
+    .kpi-badge{
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+      margin-top: 6px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      width: fit-content;
+    }
+
+    /* KPIs textuais */
+    .kpi-text{
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: -0.2px;
+      margin: 2px 0 0 0;
+      color: #0f172a;
+    }
+
+    .legend-row{
+      display:flex;
+      align-items:center;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .dot{
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      display:inline-block;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+    .dot.auto{ background: var(--auto); border: 1px solid rgba(0,0,0,0.06); }
+    .dot.gestao{ background: var(--gestao); border: 1px solid rgba(0,0,0,0.06); }
+
+    .chips{
+      display:flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 10px 0 6px 0;
+    }
+
+    .chip{
+      display:flex;
+      align-items:center;
+      gap: 8px;
+      border: 1px solid var(--border);
+      background: #fff;
+      padding: 8px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      color: #374151;
+      font-weight: 800;
+    }
+
+    .chip .ico{
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .chart-card{
+      padding: 14px 16px 8px 16px;
+    }
+
+    .chart-head{
+      display:flex;
+      align-items:flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .chart-title{
+      margin:0;
+      font-size: 14px;
+      font-weight: 900;
+      color: #111827;
+    }
+
+    .chart-note{
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    canvas{
+      width: 100% !important;
+      height: 360px !important;
+    }
+
+    footer{
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 12px;
+      text-align: right;
+      font-weight: 600;
+    }
+
+    /* ===== Painel de dados ===== */
+    .data-head{
+      display:flex;
+      align-items:flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .data-title{
+      margin:0;
+      font-size: 14px;
+      font-weight: 900;
+      color: #111827;
+    }
+    .data-help{
+      margin: 4px 0 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+      max-width: 820px;
+      line-height: 1.35;
+    }
+    details{
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 10px 12px;
+      background: #fff;
+    }
+    summary{
+      cursor: pointer;
+      font-weight: 900;
+      color: #111827;
+      list-style: none;
+      display:flex;
+      align-items:center;
+      gap: 10px;
+    }
+    summary::-webkit-details-marker{ display:none; }
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 800;
+      background: #fff;
+    }
+    .small-row{
+      display:flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    textarea{
+      width: 100%;
+      min-height: 180px;
+      resize: vertical;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      padding: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12px;
+      line-height: 1.35;
+      outline: none;
+      background: #fbfbfd;
+    }
+    .data-actions{
+      display:flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    .btn{
+      border: 1px solid var(--border);
+      background: #fff;
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-weight: 900;
+      font-size: 12px;
+      cursor: pointer;
+      box-shadow: 0 1px 0 rgba(0,0,0,0.02);
+    }
+    .btn.primary{
+      border-color: rgba(14,165,233,0.35);
+      background: rgba(14,165,233,0.08);
+      color: #075985;
+    }
+    .btn.danger{
+      border-color: rgba(239,68,68,0.35);
+      background: rgba(239,68,68,0.08);
+      color: #7f1d1d;
+    }
+    .btn:active{ transform: translateY(1px); }
+
+    .msg{
+      margin-top: 10px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      padding: 10px 12px;
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--muted);
+      background: #fff;
+      white-space: pre-wrap;
+    }
+    .msg.ok{
+      border-color: rgba(22,163,74,0.25);
+      background: rgba(22,163,74,0.08);
+      color: #14532d;
+    }
+    .msg.err{
+      border-color: rgba(239,68,68,0.25);
+      background: rgba(239,68,68,0.08);
+      color: #7f1d1d;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <div class="title-row">
+        <div>
+          <h1>Mapa de competências - Liderança Penske Inbound</h1>
+          <p class="subtitle" id="subtitle">Comparativo: Autoavaliação vs Avaliação da Gestão</p>
+        </div>
+
+        <div class="controls">
+          <label for="leaderSelect">Líder</label>
+          <select id="leaderSelect" aria-label="Segmentação por líder"></select>
+        </div>
+      </div>
+    </header>
+
+    <section class="grid">
+
+      <!-- Painel para colar tabela -->
+      <div class="card data-card">
+        <div class="data-head">
+          <div>
+            <p class="data-title">Atualizar dados (colar tabela do Excel)</p>
+            <p class="data-help">
+              Cole uma tabela com cabeçalho (Excel → TAB). Cabeçalho reconhecido:
+              <code>Nome | Comunicacao | Pessoas | Resultados | Emocional | Estrategico | Score | Classificacao | Competência a melhorar | Melhor competência</code>.
+              Colunas extras são ignoradas.
+            </p>
+          </div>
+          <div class="small-row">
+            <span class="pill" id="dataStatus">Dados: padrão</span>
+            <span class="pill" id="dataRows">Linhas: —</span>
+            <span class="pill" id="dataLeaders">Líderes: —</span>
+          </div>
+        </div>
+
+        <details>
+          <summary>🧩 Abrir editor de dados <span class="pill">Cole e clique em “Aplicar”</span></summary>
+
+          <div style="margin-top:10px;">
+            <textarea id="dataInput" spellcheck="false" aria-label="Cole a tabela aqui"></textarea>
+
+            <div class="data-actions">
+              <button class="btn primary" id="btnApply">✅ Aplicar dados</button>
+              <button class="btn" id="btnFillSample">📝 Preencher com dados atuais</button>
+              <button class="btn" id="btnSave">💾 Salvar no navegador</button>
+              <button class="btn" id="btnLoad">↩️ Carregar do navegador</button>
+              <button class="btn danger" id="btnReset">♻️ Restaurar padrão</button>
+            </div>
+
+            <div class="msg" id="dataMsg">Dica: copie a tabela do Excel (Ctrl+C) e cole aqui. Depois clique em “Aplicar dados”.</div>
+          </div>
+        </details>
+      </div>
+
+      <!-- KPI Auto -->
+      <div class="card kpi" id="kpiAuto">
+        <div class="kpi-title">
+          <span>Média geral — Autoavaliação</span>
+          <span style="color: var(--muted); font-size:12px; font-weight:900;">KPI</span>
+        </div>
+        <p class="kpi-value" id="kpiAutoValue">--%</p>
+        <div class="kpi-badge" id="kpiAutoBadge">—</div>
+      </div>
+
+      <!-- KPI Gestão -->
+      <div class="card kpi" id="kpiGestao">
+        <div class="kpi-title">
+          <span>Média geral — Avaliação da Gestão</span>
+          <span style="color: var(--muted); font-size:12px; font-weight:900;">KPI</span>
+        </div>
+        <p class="kpi-value" id="kpiGestaoValue">--%</p>
+        <div class="kpi-badge" id="kpiGestaoBadge">—</div>
+      </div>
+
+      <!-- KPI Melhor competência (somente texto) -->
+      <div class="card kpi neutral" id="kpiBest">
+        <div class="kpi-title">
+          <span>Melhor competência</span>
+          <span style="color: var(--muted); font-size:12px; font-weight:900;">KPI</span>
+        </div>
+        <p class="kpi-text" id="kpiBestText">—</p>
+      </div>
+
+      <!-- KPI Competência a melhorar (somente texto) -->
+      <div class="card kpi neutral" id="kpiImprove">
+        <div class="kpi-title">
+          <span>Competência a melhorar</span>
+          <span style="color: var(--muted); font-size:12px; font-weight:900;">KPI</span>
+        </div>
+        <p class="kpi-text" id="kpiImproveText">—</p>
+      </div>
+
+      <!-- Chart -->
+      <div class="card chart-card">
+        <div class="chart-head">
+          <div>
+            <p class="chart-title">Competências (comparativo)</p>
+            <p class="chart-note" id="chartNote">Selecione um líder para atualizar o dashboard</p>
+          </div>
+
+          <div class="legend-row" aria-label="Legenda do gráfico">
+            <span><span class="dot auto"></span>Autoavaliação</span>
+            <span><span class="dot gestao"></span>Avaliação da Gestão</span>
+          </div>
+        </div>
+
+        <div class="chips" aria-label="Ícones por competência">
+          <div class="chip"><span class="ico">🗣️</span> Comunicação</div>
+          <div class="chip"><span class="ico">👥</span> Pessoas</div>
+          <div class="chip"><span class="ico">📊</span> Resultados</div>
+          <div class="chip"><span class="ico">🫶</span> Emocional</div>
+          <div class="chip"><span class="ico">♟️</span> Estratégia</div>
+        </div>
+
+        <canvas id="barChart"></canvas>
+      </div>
+    </section>
+
+    <footer>Dashboard interativo • visual gerencial • clean</footer>
+  </div>
+
+  <script>
+    /***********************
+     * Utilitários
+     ***********************/
+    function safeClone(obj){
+      try { return structuredClone(obj); }
+      catch(e){ return JSON.parse(JSON.stringify(obj)); }
+    }
+
+    function normalizeKey(s){
+      return String(s || "")
+        .trim()
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/\s+/g, "");
+    }
+
+    function detectDelimiter(text){
+      if (text.includes("\t")) return "\t";
+      if (text.includes(";")) return ";";
+      if (text.includes(",")) return ",";
+      return "\t";
+    }
+
+    function parseNumberBR(v){
+      if (v == null) return null;
+      const s0 = String(v).trim();
+      if (!s0) return null;
+      const s = s0.replace("%","").trim();
+      const num = Number(s.replace(/\./g, "").replace(",", "."));
+      return Number.isFinite(num) ? num : null;
+    }
+
+    /***********************
+     * Base de dados (exemplo mínimo)
+     * -> No uso real, você cola do Excel e aplica.
+     ***********************/
+    const DEFAULT_DATA = [
+      { nome: "Todos", comunicacao: 15, pessoas: 18, resultados: 20, emocional: 12, estrategia: 11, score: 76, classificacao: "Desenvolvimento Necessário", competenciaMelhorar: "Estratégico", melhorCompetencia: "Resultados" },
+      { nome: "Todos (Avaliação Gestão)", comunicacao: 16, pessoas: 19, resultados: 21, emocional: 12, estrategia: 11, score: 79, classificacao: "Desenvolvimento Necessário", competenciaMelhorar: "Estratégico", melhorCompetencia: "Resultados" }
+    ];
+
+    let rawData = safeClone(DEFAULT_DATA);
+
+    const competencies = [
+      { key: "comunicacao", label: "Comunicação" },
+      { key: "pessoas", label: "Pessoas" },
+      { key: "resultados", label: "Resultados" },
+      { key: "emocional", label: "Emocional" },
+      { key: "estrategia", label: "Estratégia" }
+    ];
+
+    function isGestaoRow(nome){
+      return nome.includes("(") && nome.toLowerCase().includes("avalia");
+    }
+    function baseLeaderName(nome){
+      return nome.replace(/\s*\(.*?\)\s*/g, "").trim();
+    }
+    function getLeaders(){
+      const set = new Set(rawData.map(r => baseLeaderName(r.nome)));
+      const leaders = Array.from(set);
+      leaders.sort((a,b) => {
+        if (a === "Todos") return -1;
+        if (b === "Todos") return 1;
+        return a.localeCompare(b, "pt-BR");
+      });
+      return leaders;
+    }
+    function getPairForLeader(leader){
+      const auto = rawData.find(r => baseLeaderName(r.nome) === leader && !isGestaoRow(r.nome));
+      const gestao = rawData.find(r => baseLeaderName(r.nome) === leader && isGestaoRow(r.nome));
+      return { auto, gestao };
+    }
+
+    /***********************
+     * KPI Score / Régua:
+     * >90 Alta | 80-90 Boa | <80 Desenvolvimento
+     ***********************/
+    function calcOverall(row){
+      if (!row) return null;
+      if (row.score != null && !Number.isNaN(row.score)) return Number(row.score);
+      return competencies.reduce((acc, c) => acc + (Number(row[c.key]) || 0), 0);
+    }
+
+    function classify(score){
+      if (score > 90) return { cls: "high", label: "Alta Liderança", emoji: "🟢" };
+      if (score >= 80) return { cls: "good", label: "Boa Liderança", emoji: "🟡" };
+      return { cls: "need", label: "Desenvolvimento Necessário", emoji: "🔴" };
+    }
+
+    function setKpiScore(cardId, valueId, badgeId, score, badgeText){
+      const card = document.getElementById(cardId);
+      const valueEl = document.getElementById(valueId);
+      const badgeEl = document.getElementById(badgeId);
+
+      card.classList.remove("high","good","need");
+
+      if (score == null || Number.isNaN(score)){
+        valueEl.textContent = "--%";
+        badgeEl.textContent = "Sem dados";
+        return;
+      }
+
+      const c = classify(score);
+      card.classList.add(c.cls);
+      valueEl.textContent = `${Number(score).toFixed(0)}%`;
+      badgeEl.textContent = (badgeText && String(badgeText).trim())
+        ? `🏷️ ${badgeText}`
+        : `${c.emoji} ${c.label}`;
+    }
+
+    /***********************
+     * KPIs novos (Melhor / Melhorar)
+     * - usa coluna do Excel se existir
+     * - fallback: calcula maior e menor valor nas 5 competências
+     * - EXIBE APENAS O TEXTO (sem valor embaixo) ✅
+     ***********************/
+    function mapCompetencyTextToKey(txt){
+      const t = normalizeKey(txt);
+      if (!t) return null;
+      if (t.startsWith("comunica")) return "comunicacao";
+      if (t.startsWith("pessoa")) return "pessoas";
+      if (t.startsWith("result")) return "resultados";
+      if (t.startsWith("emoc")) return "emocional";
+      if (t.startsWith("estrat")) return "estrategia";
+      const byLabel = competencies.find(c => normalizeKey(c.label) === t);
+      return byLabel ? byLabel.key : null;
+    }
+
+    function getBestWorstComputed(row){
+      if (!row) return { best: null, worst: null };
+      const values = competencies
+        .map(c => ({ key: c.key, label: c.label, value: Number(row[c.key]) }))
+        .filter(x => Number.isFinite(x.value));
+      if (!values.length) return { best: null, worst: null };
+      let best = values[0], worst = values[0];
+      for (const v of values){
+        if (v.value > best.value) best = v;
+        if (v.value < worst.value) worst = v;
+      }
+      return { best, worst };
+    }
+
+    function resolveBestWorst(row){
+      const computed = getBestWorstComputed(row);
+
+      let best = null;
+      const bestKey = mapCompetencyTextToKey(row?.melhorCompetencia);
+      if (bestKey){
+        const c = competencies.find(x => x.key === bestKey);
+        if (c) best = { label: c.label };
+      }
+      if (!best && computed.best) best = { label: computed.best.label };
+
+      let worst = null;
+      const worstKey = mapCompetencyTextToKey(row?.competenciaMelhorar);
+      if (worstKey){
+        const c = competencies.find(x => x.key === worstKey);
+        if (c) worst = { label: c.label };
+      }
+      if (!worst && computed.worst) worst = { label: computed.worst.label };
+
+      return { best, worst };
+    }
+
+    function setKpiText(textId, label){
+      const el = document.getElementById(textId);
+      el.textContent = label ? label : "—";
+    }
+
+    /***********************
+     * Chart.js
+     ***********************/
+    const css = getComputedStyle(document.documentElement);
+    const colorAuto = css.getPropertyValue("--auto").trim();
+    const colorGestao = css.getPropertyValue("--gestao").trim();
+
+    Chart.register(ChartDataLabels);
+
+    const ctx = document.getElementById("barChart");
+    const chart = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: competencies.map(c => c.label),
+        datasets: [
+          {
+            label: "Autoavaliação",
+            data: [0,0,0,0,0],
+            backgroundColor: colorAuto,
+            borderColor: "rgba(0,0,0,0.08)",
+            borderWidth: 1,
+            borderRadius: 10,
+            barThickness: 28
+          },
+          {
+            label: "Avaliação da Gestão",
+            data: [0,0,0,0,0],
+            backgroundColor: colorGestao,
+            borderColor: "rgba(0,0,0,0.08)",
+            borderWidth: 1,
+            borderRadius: 10,
+            barThickness: 28
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${c.parsed.y}%` } },
+          datalabels: {
+            color: "#374151",
+            font: { weight: 800, size: 11 },
+            anchor: "end",
+            align: "end",
+            offset: 2,
+            formatter: (v) => (v == null ? "" : `${v}%`)
+          }
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: "#374151", font: { weight: 800 } } },
+          y: { display: false, beginAtZero: true, suggestedMax: 30, grid: { display: false }, ticks: { display: false } }
+        }
+      }
+    });
+
+    function calcSuggestedMax(auto, gestao){
+      const values = [];
+      competencies.forEach(c => {
+        if (auto?.[c.key] != null) values.push(Number(auto[c.key]));
+        if (gestao?.[c.key] != null) values.push(Number(gestao[c.key]));
+      });
+      const max = Math.max(0, ...values.filter(v => Number.isFinite(v)));
+      return Math.max(10, Math.ceil(max * 1.15));
+    }
+
+    function updateDashboard(leader){
+      const { auto, gestao } = getPairForLeader(leader);
+
+      const autoOverall = calcOverall(auto);
+      const gestaoOverall = calcOverall(gestao);
+
+      setKpiScore("kpiAuto", "kpiAutoValue", "kpiAutoBadge", autoOverall, auto?.classificacao);
+      setKpiScore("kpiGestao", "kpiGestaoValue", "kpiGestaoBadge", gestaoOverall, gestao?.classificacao);
+
+      const baseRow = auto || gestao;
+      const { best, worst } = resolveBestWorst(baseRow);
+
+      setKpiText("kpiBestText", best?.label);
+      setKpiText("kpiImproveText", worst?.label);
+
+      chart.data.datasets[0].data = competencies.map(c => auto ? auto[c.key] : null);
+      chart.data.datasets[1].data = competencies.map(c => gestao ? gestao[c.key] : null);
+      chart.options.scales.y.suggestedMax = calcSuggestedMax(auto, gestao);
+
+      document.getElementById("subtitle").textContent =
+        `Comparativo: Autoavaliação vs Avaliação da Gestão • Líder selecionado: ${leader}`;
+
+      const note = document.getElementById("chartNote");
+      note.textContent = (!gestao)
+        ? "Observação: não há linha de Avaliação da Gestão para este líder (apenas Autoavaliação)."
+        : "Passe o mouse nas barras para detalhes. Rótulos mostram o valor em %.";
+
+      chart.update();
+    }
+
+    /***********************
+     * Segmentação
+     ***********************/
+    const leaderSelect = document.getElementById("leaderSelect");
+
+    function rebuildLeaderSelect(preferLeader){
+      const leaders = getLeaders();
+      leaderSelect.innerHTML = "";
+      leaders.forEach(l => {
+        const opt = document.createElement("option");
+        opt.value = l;
+        opt.textContent = l;
+        leaderSelect.appendChild(opt);
+      });
+
+      const defaultLeader =
+        (preferLeader && leaders.includes(preferLeader)) ? preferLeader :
+        (leaders.includes("Todos") ? "Todos" : (leaders[0] ?? ""));
+
+      leaderSelect.value = defaultLeader;
+      updateDashboard(defaultLeader);
+      updateStatsPills();
+    }
+
+    leaderSelect.addEventListener("change", (e) => updateDashboard(e.target.value));
+
+    /***********************
+     * Atualizador (colar do Excel)
+     ***********************/
+    const LS_KEY = "penske_competencias_rawData_v4";
+    const dataInput = document.getElementById("dataInput");
+    const dataMsg = document.getElementById("dataMsg");
+    const dataStatus = document.getElementById("dataStatus");
+    const dataRows = document.getElementById("dataRows");
+    const dataLeaders = document.getElementById("dataLeaders");
+
+    function setMsg(type, text){
+      dataMsg.classList.remove("ok","err");
+      dataMsg.classList.add(type === "ok" ? "ok" : "err");
+      dataMsg.textContent = text;
+    }
+
+    function updateStatsPills(){
+      const leaders = getLeaders();
+      dataRows.textContent = `Linhas: ${rawData.length}`;
+      dataLeaders.textContent = `Líderes: ${leaders.length}`;
+    }
+
+    function toTSV(data){
+      const header = [
+        "Nome","Comunicacao","Pessoas","Resultados","Emocional","Estrategico",
+        "Score","Classificacao","Competência a melhorar","Melhor competência"
+      ];
+      const lines = [header.join("\t")];
+      data.forEach(r => {
+        lines.push([
+          r.nome ?? "",
+          r.comunicacao ?? "",
+          r.pessoas ?? "",
+          r.resultados ?? "",
+          r.emocional ?? "",
+          r.estrategia ?? "",
+          r.score ?? "",
+          r.classificacao ?? "",
+          r.competenciaMelhorar ?? "",
+          r.melhorCompetencia ?? ""
+        ].join("\t"));
+      });
+      return lines.join("\n");
+    }
+
+    function parseTable(text){
+      const cleaned = String(text || "").replace(/\r/g, "").trim();
+      if (!cleaned) throw new Error("Cole uma tabela antes de aplicar.");
+
+      const delimiter = detectDelimiter(cleaned);
+      const lines = cleaned.split("\n").map(l => l.trim()).filter(Boolean);
+      if (lines.length < 2) throw new Error("A tabela precisa ter cabeçalho e ao menos 1 linha.");
+
+      const headerRaw = lines[0].split(delimiter).map(h => h.trim());
+      const header = headerRaw.map(normalizeKey);
+
+      const keyMap = new Map();
+      header.forEach((h, i) => keyMap.set(h, i));
+
+      const COLS = {
+        nome: ["nome"],
+        comunicacao: ["comunicacao", "comunicacao%"],
+        pessoas: ["pessoas"],
+        resultados: ["resultados"],
+        emocional: ["emocional"],
+        estrategia: ["estrategico", "estrategia", "estrategia%"],
+        score: ["score"],
+        classificacao: ["classificacao"],
+        competenciaMelhorar: ["competenciaamelhorar", "competencia a melhorar", "competencia_a_melhorar"],
+        melhorCompetencia: ["melhorcompetencia", "melhor competencia", "melhor_competencia"]
+      };
+
+      function findIndex(keys){
+        for (const k of keys){
+          const idx = keyMap.get(normalizeKey(k));
+          if (idx != null) return idx;
+        }
+        return null;
+      }
+
+      const idxNome  = findIndex(COLS.nome);
+      const idxCom   = findIndex(COLS.comunicacao);
+      const idxPes   = findIndex(COLS.pessoas);
+      const idxRes   = findIndex(COLS.resultados);
+      const idxEmo   = findIndex(COLS.emocional);
+      const idxEst   = findIndex(COLS.estrategia);
+
+      const idxScore = findIndex(COLS.score);
+      const idxClas  = findIndex(COLS.classificacao);
+      const idxAme   = findIndex(COLS.competenciaMelhorar);
+      const idxMelh  = findIndex(COLS.melhorCompetencia);
+
+      const missing = [
+        ["nome", idxNome],
+        ["comunicacao", idxCom],
+        ["pessoas", idxPes],
+        ["resultados", idxRes],
+        ["emocional", idxEmo],
+        ["estrategia (Estrategico)", idxEst]
+      ].filter(([_, idx]) => idx == null).map(([name]) => name);
+
+      if (missing.length){
+        throw new Error(
+          `Não encontrei as colunas obrigatórias: ${missing.join(", ")}.\n` +
+          `Cabeçalho encontrado: ${headerRaw.join(" | ")}`
+        );
+      }
+
+      const out = [];
+      for (let i = 1; i < lines.length; i++){
+        const cells = lines[i].split(delimiter).map(c => c.trim());
+
+        const row = {
+          nome: String(cells[idxNome] ?? "").trim(),
+          comunicacao: parseNumberBR(cells[idxCom]),
+          pessoas: parseNumberBR(cells[idxPes]),
+          resultados: parseNumberBR(cells[idxRes]),
+          emocional: parseNumberBR(cells[idxEmo]),
+          estrategia: parseNumberBR(cells[idxEst]),
+          score: idxScore != null ? parseNumberBR(cells[idxScore]) : null,
+          classificacao: idxClas != null ? String(cells[idxClas] ?? "").trim() : "",
+          competenciaMelhorar: idxAme != null ? String(cells[idxAme] ?? "").trim() : "",
+          melhorCompetencia: idxMelh != null ? String(cells[idxMelh] ?? "").trim() : ""
+        };
+
+        if (!row.nome) throw new Error(`Linha ${i+1}: Nome está vazio.`);
+
+        const invalid = ["comunicacao","pessoas","resultados","emocional","estrategia"]
+          .filter(k => row[k] == null || Number.isNaN(row[k]));
+        if (invalid.length){
+          throw new Error(`Linha ${i+1}: valores inválidos em: ${invalid.join(", ")}`);
+        }
+
+        out.push(row);
+      }
+
+      return out;
+    }
+
+    function applyDataFromTextarea(){
+      const prevLeader = leaderSelect.value;
+      try{
+        const parsed = parseTable(dataInput.value);
+        rawData = parsed;
+        rebuildLeaderSelect(prevLeader);
+        dataStatus.textContent = "Dados: editados";
+        setMsg("ok", `✅ Dados aplicados com sucesso!\nLinhas: ${rawData.length}\nLíder atual: ${leaderSelect.value}`);
+      } catch(err){
+        setMsg("err", `❌ Erro ao aplicar dados:\n${err.message}`);
+      }
+    }
+
+    function fillTextareaWithCurrentData(){
+      dataInput.value = toTSV(rawData);
+      setMsg("ok", "📝 Editor preenchido com os dados atuais. Ajuste e clique em “Aplicar dados”.");
+    }
+
+    function saveToBrowser(){
+      try{
+        localStorage.setItem(LS_KEY, JSON.stringify(rawData));
+        dataStatus.textContent = "Dados: salvos";
+        setMsg("ok", "💾 Salvo no navegador com sucesso.");
+      } catch(e){
+        setMsg("err", "❌ Não foi possível salvar no navegador.");
+      }
+    }
+
+    function loadFromBrowser(){
+      const s = localStorage.getItem(LS_KEY);
+      if (!s){
+        setMsg("err", "❌ Nenhum dado salvo encontrado no navegador.");
+        return;
+      }
+      try{
+        const parsed = JSON.parse(s);
+        if (!Array.isArray(parsed)) throw new Error("Formato inválido.");
+        rawData = parsed;
+        rebuildLeaderSelect(leaderSelect.value);
+        dataStatus.textContent = "Dados: carregados";
+        setMsg("ok", "↩️ Dados carregados do navegador com sucesso.");
+      } catch(e){
+        setMsg("err", "❌ Erro ao carregar dados do navegador.");
+      }
+    }
+
+    function resetToDefault(){
+      rawData = safeClone(DEFAULT_DATA);
+      rebuildLeaderSelect("Todos");
+      dataStatus.textContent = "Dados: padrão";
+      fillTextareaWithCurrentData();
+      setMsg("ok", "♻️ Dados restaurados para o padrão.");
+    }
+
+    document.getElementById("btnApply").addEventListener("click", applyDataFromTextarea);
+    document.getElementById("btnFillSample").addEventListener("click", fillTextareaWithCurrentData);
+    document.getElementById("btnSave").addEventListener("click", saveToBrowser);
+    document.getElementById("btnLoad").addEventListener("click", loadFromBrowser);
+    document.getElementById("btnReset").addEventListener("click", resetToDefault);
+
+    /***********************
+     * Init (arquivo local)
+     ***********************/
+    (function init(){
+      const saved = localStorage.getItem(LS_KEY);
+      if (saved){
+        try{
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length){
+            rawData = parsed;
+            dataStatus.textContent = "Dados: carregados";
+          }
+        } catch(e){}
+      }
+
+      rebuildLeaderSelect("Todos");
+      fillTextareaWithCurrentData();
+      updateStatsPills();
+    })();
+  </script>
+</body>
+</html>
